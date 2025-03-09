@@ -11,7 +11,8 @@ import RK45
 from einzel import einzel_lens
 
 el = einzel_lens(show_mesh=True)
-el.set_parameters(r1=)
+el.set_parameters(mesh_step=1.5, r1=1, d1=2,d2=2,t1=28,t2=26,t3=32)
+
 
 def simu(V, Fichier, I, el):
     el.setup()    ## Setup the basic configuration for BEMPP
@@ -89,13 +90,13 @@ def simu(V, Fichier, I, el):
     ### Starting here, the script goes through, even if data was not written in .dat before (it was created)
     ##
 
-    for i in range(1): ## if needed to check for multiple angle values at once, uncomment block below and change 'in range' value.
+    ##for i in range(1): ## if needed to check for multiple angle values at once, uncomment block below and change 'in range' value.
         # Voltage_E2=-55000-i*1000    
         ##
         ### The derivate here are, all, negative derivative of potential
         ##
-        Potential_evaluated_z_TOT_0,E_evaluated_z_TOT,D2_evaluated_z_TOT,D3_evaluated_z_TOT,D4_evaluated_z_TOT=el.SumAndVoltage(Potential_evaluated_z,E_evaluated_z,D2_evaluated_z,D3_evaluated_z,D4_evaluated_z,[Voltage_E1,Voltage_E2,Voltage_E3]) # Sum of voltage created by differents electrode and multiplied from unitary voltage to chosen one (Voltage_E*)
-        Potential_evaluated_z_TOT=E0/Qref-Potential_evaluated_z_TOT_0 ## We use the kinetic energy divided by e. Acceleration voltage divided by charge reference minus potential (calculated by BEMPP). It is necessary to use it for formulae such as Spheric aberration.
+    Potential_evaluated_z_TOT_0,E_evaluated_z_TOT,D2_evaluated_z_TOT,D3_evaluated_z_TOT,D4_evaluated_z_TOT=el.SumAndVoltage(Potential_evaluated_z,E_evaluated_z,D2_evaluated_z,D3_evaluated_z,D4_evaluated_z,[Voltage_E1,Voltage_E2,Voltage_E3]) # Sum of voltage created by differents electrode and multiplied from unitary voltage to chosen one (Voltage_E*)
+    Potential_evaluated_z_TOT=E0/Qref-Potential_evaluated_z_TOT_0 ## We use the kinetic energy divided by e. Acceleration voltage divided by charge reference minus potential (calculated by BEMPP). It is necessary to use it for formulae such as Spheric aberration.
         
         ### You can uncomment below if you want to plot potential and its negative derivates
         # Plot(z_axis,Potential_evaluated_z_TOT,5)
@@ -107,45 +108,131 @@ def simu(V, Fichier, I, el):
         ##
         ### Calculation of principal ray and marginal ray solving paraxial equation with a Runge Kunta 4. It return y and y' for Principal and Marginal. (y : its height along the z axis, y': its derivate (slope))
         ##
-        [Principal,Marginal]=el.PrincipalAndMarginalRays(z_axis,Potential_evaluated_z_TOT,E_evaluated_z_TOT,D2_evaluated_z_TOT)
+    [Principal,Marginal]=el.PrincipalAndMarginalRays(z_axis,Potential_evaluated_z_TOT,E_evaluated_z_TOT,D2_evaluated_z_TOT)
         # Plot(z_axis,Principal[0],10)
         # Plot(z_axis,Marginal[0],10)
 
         ## 
         ### Calculation of trajectory using principal and marginal ray with initial condition
         ##
-        r2=el.Trajectory(Principal[0],Marginal[0],initial) ## Trajectory of a ray with initial condition
+    r2=el.Trajectory(Principal[0],Marginal[0],initial) ## Trajectory of a ray with initial condition
         # Plot(z_axis,r2,11)
 
-        for j in range(1): ## if needed to check for multiple angle values at once, uncomment block below and change 'in range' valule. 
+        ##for j in range(1): ## if needed to check for multiple angle values at once, uncomment block below and change 'in range' valule. 
         # initial=[0,0.5*j+0.5]
 
-            print("")
-            print("Voltage Electrode 2 at", Voltage_E2,"V: ")
-            print("Initial state : h =",initial[0]," and alpha =",initial[1],"degree")
+    
             ##
             ### Calculation of image point (zi)
             ##
-            halfz= 10   ## A number > 0 but small so it will search the root of marginal after index 10 in the marginal table
-            zi= np.argmin(np.abs(Marginal[0][halfz:]))+halfz ## Calculate the point where the marginal cross the axis
-            print("Image Plan : ",z_axis[zi])
-            M=el.Magnification(Principal[0],Marginal[0])   ## Give Magnification: when marginal ray cross z=0
-            print("Magnification : ", M)
+    halfz= 10   ## A number > 0 but small so it will search the root of marginal after index 10 in the marginal table
+    zi= np.argmin(np.abs(Marginal[0][halfz:]))+halfz ## Calculate the point where the marginal cross the axis
+    
+    M=el.Magnification(Principal[0],Marginal[0])   ## Give Magnification: when marginal ray cross z=0
+    
 
             ##
             ### Calculation of spherical aberration and chromatic aberration. 
             ### Cs is the spherical aberration coefficient, DXS its delta X. Cc is the chromatic aberration coefficient, DXC its delta X.
             ##
-            Cs,DXS=el.Spherical_Aberration(Marginal[0][0:zi],Marginal[1][0:zi],Potential_evaluated_z_TOT[0:zi],D2_evaluated_z_TOT[0:zi],D4_evaluated_z_TOT[0:zi],z_axis[0:zi],initial) ## Calculatation of Spherical Aberration coefficient and its delta X (transverse)
-            print("Spherical Abberation coefficient :", Cs)
-            print("Coef CS JB :",get_CoeffSpheric(Potential_evaluated_z_TOT[0:zi],E_evaluated_z_TOT[0:zi],D2_evaluated_z_TOT[0:zi],z_axis[0:zi],Marginal[0][0:zi],Marginal[1][0:zi])) ## Spherical Coefficient aberration (JB)
-            print("Spherical Delta X : ", DXS)
+    Cs,DXS=el.Spherical_Aberration(Marginal[0][0:zi],Marginal[1][0:zi],Potential_evaluated_z_TOT[0:zi],D2_evaluated_z_TOT[0:zi],D4_evaluated_z_TOT[0:zi],z_axis[0:zi],initial) ## Calculatation of Spherical Aberration coefficient and its delta X (transverse)
+    
 
-            Cc,DXC=el.Chromatic_Aberration(Marginal[0][0:zi],Marginal[1][0:zi],Potential_evaluated_z_TOT[0:zi],z_axis[0:zi],initial,deltaE0)  ## Calculatation of Chromatic Aberration coefficient and its delta X (transverse)
-            print("Chromatic Abberation coefficient :", Cc)
-            print("Chromatic Delta X : ", DXC)
+    Cc,DXC=el.Chromatic_Aberration(Marginal[0][0:zi],Marginal[1][0:zi],Potential_evaluated_z_TOT[0:zi],z_axis[0:zi],initial,deltaE0)  ## Calculatation of Chromatic Aberration coefficient and its delta X (transverse)
+    
             
             ##
             ### Calculation of spot Diameter
             ##
-            print("Spot Diameter :",el.Spot_Diameter(DXS,DXC,M,2))
+    
+    spot=el.Spot_Diameter(DXS,DXC,M,2)
+    
+    return z_axis[zi],DXS,DXC,spot
+
+
+
+focale,DXS,DXC,spot=simu(27000,False,[0,.5],el)##Values of the original lens before optimizing
+
+def autofocus(efl):
+    return (efl-focale)
+
+print(autofocus(focale))
+
+def jacob_focus(F,var,h):
+ elt=einzel_lens(show_mesh=True)
+ n=len(var)  
+ J=np.zeros(n)
+ for j in range(n):
+    var_step=var.copy()
+    var_step[j]+= h
+    elt.set_parameters(mesh_step=1.5, r1=1, d1=var_step[1],d2=var_step[2],t1=28,t2=26,t3=32)
+    foc,S,C,spot_size=simu(var_step[0],False,[0,.5],elt)
+    focus=(autofocus(foc))
+    ##print(focus)
+    J[j]=(focus-F)/h
+ return J
+
+def DLS(F,p,Var,J):
+    
+    a=np.dot(np.transpose(J),J)+p*np.eye(len(Var))
+    b=np.dot(-np.transpose(J),F)
+    Delta_Var=np.linalg.solve(a,b)
+
+    return Delta_Var
+
+
+def optim(p,F,var):
+   f_start=F
+   v0=var
+   elt=einzel_lens(show_mesh=True)
+   k=0
+   Vec_f=Vec_f.append(f_start)
+   for k in range(10):
+      v=v0
+      J=jacob_focus(f_start,v,h=1)
+      D_Var=DLS(f_start,p,v,J)
+      v=v+D_Var
+      elt.set_parameters(mesh_step=1.5, r1=1, d1=v[1],d2=v[2],t1=28,t2=26,t3=32)
+      ft,xst,xct,spt=simu(v[0],False,[0,1],elt)
+      f=autofocus(ft)
+      while (f**2)>(f_start**2) and p<10000:
+         k+=1
+         p=10*p
+         D_Var=DLS(f_start,p,v,J)
+         v=v+D_Var
+         elt.set_parameters(mesh_step=1.5, r1=1, d1=v[1]+D_Var[1],d2=v[2]+D_Var[2],t1=28,t2=26,t3=32)
+         ft,xst,xct,spt=simu(v[0]+D_Var[0],False,[0,1],elt)
+         f=autofocus(ft)
+         Vec_f=Vec_f.append(f)
+      
+      if (f**2)<=(f_start**2):
+         while True:
+            k+=1
+            p=0.1*p
+            D_Var=DLS(f_start,p,v,J)
+            v=v+D_Var
+            elt.set_parameters(mesh_step=1.5, r1=1, d1=v[1]+D_Var[1],d2=v[2]+D_Var[2],t1=28,t2=26,t3=32)
+            ft,xst,xct,spt=simu(v[0]+D_Var[0],False,[0,1],elt)
+            f=autofocus(ft)
+            Vec_f=Vec_f.append(f)
+            if not ((Vec_f[k]**2)<(Vec_f[k-1]**2)):
+               break
+         
+         v0=v-D_Var
+         p=p*10
+         f_start=Vec_f[k-1]
+      print(f)
+   print(ft)
+
+
+el0 = einzel_lens(show_mesh=True)
+el0.set_parameters(mesh_step=1.5, r1=1, d1=20,d2=20,t1=28,t2=26,t3=32)
+fz,xs,xc,sp=simu(27000,False,[0,.5],el0)
+##print(fz)
+##print(jacob_focus(autofocus(focale),[27000,20,20],h=1))
+##D_var=DLS(autofocus(fz),1,[27000,20,20],jacob_focus(autofocus(fz),[27000,20,20],1))
+##elf=einzel_lens(show_mesh=True)
+##elf.set_parameters(mesh_step=1.5, r1=1, d1=20+D_var[1],d2=20+D_var[2],t1=28,t2=26,t3=32)
+##ff,xsf,xcs,spf=simu(27000+D_var[0],False,[0,.5],elf)
+##print(ff)
+optim(0.1,fz,[27000,20,20])
