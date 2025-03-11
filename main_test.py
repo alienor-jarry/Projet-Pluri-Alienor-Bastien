@@ -186,14 +186,15 @@ def optim(p,F,var):
    v0=var
    elt=einzel_lens(show_mesh=True)
    k=0
-   Vec_f=Vec_f.append(f_start)
-   for k in range(10):
+   Vec_f=[]
+   Vec_f.append(f_start)
+   for i in range(1):
       v=v0
       J=jacob_focus(f_start,v,h=1)
       D_Var=DLS(f_start,p,v,J)
       v=v+D_Var
       elt.set_parameters(mesh_step=1.5, r1=1, d1=v[1],d2=v[2],t1=28,t2=26,t3=32)
-      ft,xst,xct,spt=simu(v[0],False,[0,1],elt)
+      ft,xst,xct,spt=simu(v[0],False,[0,.5],elt)
       f=autofocus(ft)
       while (f**2)>(f_start**2) and p<10000:
          k+=1
@@ -201,28 +202,30 @@ def optim(p,F,var):
          D_Var=DLS(f_start,p,v,J)
          v=v+D_Var
          elt.set_parameters(mesh_step=1.5, r1=1, d1=v[1]+D_Var[1],d2=v[2]+D_Var[2],t1=28,t2=26,t3=32)
-         ft,xst,xct,spt=simu(v[0]+D_Var[0],False,[0,1],elt)
+         ft,xst,xct,spt=simu(v[0]+D_Var[0],False,[0,.5],elt)
          f=autofocus(ft)
-         Vec_f=Vec_f.append(f)
+         Vec_f.append(f)
       
       if (f**2)<=(f_start**2):
          while True:
-            k+=1
             p=0.1*p
-            D_Var=DLS(f_start,p,v,J)
+            J=jacob_focus(Vec_f[k],v,h=1)
+            D_Var=DLS(Vec_f[k],p,v,J)
             v=v+D_Var
             elt.set_parameters(mesh_step=1.5, r1=1, d1=v[1]+D_Var[1],d2=v[2]+D_Var[2],t1=28,t2=26,t3=32)
-            ft,xst,xct,spt=simu(v[0]+D_Var[0],False,[0,1],elt)
+            ft,xst,xct,spt=simu(v[0]+D_Var[0],False,[0,.5],elt)
             f=autofocus(ft)
-            Vec_f=Vec_f.append(f)
+            Vec_f.append(f)
+            k+=1
             if not ((Vec_f[k]**2)<(Vec_f[k-1]**2)):
                break
          
          v0=v-D_Var
          p=p*10
          f_start=Vec_f[k-1]
-      print(f)
+      print(f_start)
    print(ft)
+   print(Vec_f)
 
 
 el0 = einzel_lens(show_mesh=True)
@@ -235,4 +238,49 @@ fz,xs,xc,sp=simu(27000,False,[0,.5],el0)
 ##elf.set_parameters(mesh_step=1.5, r1=1, d1=20+D_var[1],d2=20+D_var[2],t1=28,t2=26,t3=32)
 ##ff,xsf,xcs,spf=simu(27000+D_var[0],False,[0,.5],elf)
 ##print(ff)
-optim(0.1,fz,[27000,20,20])
+##optim(0.1,fz,[27000,20,20])
+p=1
+f_start=autofocus(fz)
+v0=[27000,20,20]
+elt=einzel_lens(show_mesh=True)
+k=0
+Vec_f=[]
+Vec_f.append(f_start)
+v=v0
+J=jacob_focus(f_start,v,h=1)
+D_Var=DLS(f_start,p,v,J)
+v=v+D_Var
+elt.set_parameters(mesh_step=1.5, r1=1, d1=v[1],d2=v[2],t1=28,t2=26,t3=32)
+ft,xst,xct,spt=simu(v[0],False,[0,.5],elt)
+f=autofocus(ft)
+while (f**2)>(f_start**2) and p<10000:
+     k+=1
+     p=10*p
+     D_Var=DLS(f_start,p,v,J)
+     v=v+D_Var
+     elt.set_parameters(mesh_step=1.5, r1=1, d1=v[1]+D_Var[1],d2=v[2]+D_Var[2],t1=28,t2=26,t3=32)
+     ft,xst,xct,spt=simu(v[0]+D_Var[0],False,[0,.5],elt)
+     f=autofocus(ft)
+     Vec_f.append(f)
+if (f**2)<=(f_start**2):
+         while True:
+            p=0.1*p
+            J=jacob_focus(Vec_f[k],v,h=1)
+            D_Var=DLS(Vec_f[k],p,v,J)
+            v=v+D_Var
+            elt.set_parameters(mesh_step=1.5, r1=1, d1=v[1]+D_Var[1],d2=v[2]+D_Var[2],t1=28,t2=26,t3=32)
+            ft,xst,xct,spt=simu(v[0]+D_Var[0],False,[0,.5],elt)
+            f=autofocus(ft)
+            Vec_f.append(f)
+            k+=1
+            if not ((Vec_f[k]**2)<(Vec_f[k-1]**2)):
+               break
+         
+         v0=v-D_Var
+         p=p*10
+         f_start=Vec_f[k-1]
+print(f)
+print(ft)
+print(D_Var)
+print(v)
+print(p)
