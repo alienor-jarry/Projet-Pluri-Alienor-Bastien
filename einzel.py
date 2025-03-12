@@ -652,7 +652,7 @@ class einzel_lens:
      elt.set_parameters(mesh_step=1.5, r1=1, d1=var[1],d2=var[2],t1=28,t2=26,t3=32)##Caréctristiques de la lentilles de départ
      self.Focale_Voulue,DXS,DXC,Spot_Size=self.simu(27000,False,[0,.5])##On récupère la focale de la lentille de JB pour avoir la valeur de l'opérande autofocus
      ##elt.Focale_Voulue=self.Focale_Voulue
-     ft,xst,xct,spt=elt.simu(v[0],False,[0,.5])##On récupère la focale de la lentille départ
+     ft,xst,xct,spt=elt.simu(var[0],False,[0,.5])##On récupère la focale de la lentille départ
      F_start=self.autofocus(ft)
      v0=var    ## v0 stocke nos variables de départ => On modifie v0 au lieu de var
      k=0
