@@ -625,7 +625,7 @@ class einzel_lens:
          var_step=var.copy() ## A chaque itération on reprend les valeurs de départ de var
          var_step[j]+= h ## On fait varier la variable d'indice j
          elt.set_parameters(mesh_step=1.5, r1=1, d1=var_step[1],d2=var_step[2],t1=28,t2=26,t3=32)
-         ft,S,C,spot_size=elt.simu(var_step[0],False,[0,.5],elt)                                 ## On recalcule la focale (ft) après variation de la variable
+         ft,S,C,spot_size=elt.simu(var_step[0],False,[0,.5])                                 ## On recalcule la focale (ft) après variation de la variable
          focus=(self.autofocus(ft)) ## On obtient f(xj+h)
          ##print(focus)
          J[j]=(focus-F)/h ## Formule dérivée => [f(x+h)-f(x)]/h
@@ -651,40 +651,40 @@ class einzel_lens:
      elt=einzel_lens(show_mesh=True)##Lentille intermédiare
      elt.set_parameters(mesh_step=1.5, r1=1, d1=var[1],d2=var[2],t1=28,t2=26,t3=32)##Caréctristiques de la lentilles de départ
      self.Focale_Voulue,DXS,DXC,Spot_Size=self.simu(27000,False,[0,.5])##On récupère la focale de la lentille de JB pour avoir la valeur de l'opérande autofocus
-     ##elt.Focale_Voulue=self.Focale_Voulue
+     elt.Focale_Voulue=self.Focale_Voulue
      ft,xst,xct,spt=elt.simu(var[0],False,[0,.5])##On récupère la focale de la lentille départ
      F_start=self.autofocus(ft)
-     v0=var    ## v0 stocke nos variables de départ => On modifie v0 au lieu de var
+     v0=np.array(var)    ## v0 stocke nos variables de départ => On modifie v0 au lieu de var
      k=0
      Vec_f=[] ##Création tableau des vecteurs d'opérandes (pour l'instant juste autofocus)
      Vec_f.append(F_start)
      for i in range(1):## On fait tourner la fonction un certains nombres d'itérations pour obtenir plusieurs minima 
                        ## A chaque itération, on charche un nouveau minimum à partir de celui de l'itération précedente
          v=v0
-         J=self.jacob_focus(F_start,v,h=1)                                             ## Cette première partie permet d'avoir un facteur d'ammortissement assez grand
-         D_Var=self.DLS(F_start,p,v,J)                                                 ## pour se rapprocher d'un extremum
-         v=v+D_Var
+         J=elt.jacob_focus(np.array(F_start),v,1)                                             ## Cette première partie permet d'avoir un facteur d'ammortissement assez grand
+         D_Var=self.DLS(np.array(F_start),p,v,J)                                                 ## pour se rapprocher d'un extremum
+         v=v0+D_Var
          elt.set_parameters(mesh_step=1.5, r1=1, d1=v[1],d2=v[2],t1=28,t2=26,t3=32)    ## Pour cela on effectue en boucle un DLS avec F_start en gardant le même J
-         ft,xst,xct,spt=elt.simu(v[0],False,[0,.5],elt)                                ## jusqu'à que l'on est un p pour lequel (F**2)<(F_start**2) ou que p est trop grand
+         ft,xst,xct,spt=elt.simu(v[0],False,[0,.5])                                ## jusqu'à que l'on est un p pour lequel (F**2)<(F_start**2) ou que p est trop grand
          F=self.autofocus(ft)
          while (F**2)>(F_start**2) and p<10000:
              k+=1
              p=10*p
-             D_Var=self.DLS(F_start,p,v,J)
-             v=v+D_Var
+             D_Var=self.DLS(np.array(F_start),p,v,J)
+             v=v0+D_Var
              elt.set_parameters(mesh_step=1.5, r1=1, d1=v[1],d2=v[2],t1=28,t2=26,t3=32)
-             ft,xst,xct,spt=elt.simu(v[0],False,[0,.5],elt)
+             ft,xst,xct,spt=elt.simu(v[0],False,[0,.5])
              F=self.autofocus(ft)
              Vec_f.append(F)
       
          if (F**2)<=(F_start**2):                                                ## Lorsque l'une des deux conditions au dessus est validée on regarde si (F**2)<=(F_start**2)
              while True:
                  p=0.1*p
-                 J=self.jacob_focus(Vec_f[k],v,h=1)                              ## Si (F**2)>(F_start**2) alors cela veut dire que F_start est l'extremum que l'on cherche
+                 J=elt.jacob_focus(Vec_f[k],v,1)                              ## Si (F**2)>(F_start**2) alors cela veut dire que F_start est l'extremum que l'on cherche
                  D_Var=self.DLS(Vec_f[k],p,v,J)
                  v=v+D_Var
                  elt.set_parameters(mesh_step=1.5, r1=1, d1=v[1],d2=v[2],t1=28,t2=26,t3=32)  ## Dans le cas contraire, on réaffine p tout en effectuant des DLS entre les deux derniers vecteurs d'opérandes
-                 ft,xst,xct,spt=elt.simu(v[0],False,[0,.5],elt)                              ## que l'on a stockés depuis le début dans le tableau Vec_f
+                 ft,xst,xct,spt=elt.simu(v[0],False,[0,.5])                              ## que l'on a stockés depuis le début dans le tableau Vec_f
                  F=self.autofocus(ft)                                                        ## On continue ainsi jusqu'à que l'on a dépassé le minimum que l'on veut (Vec_f[k-1])
                  Vec_f.append(F)
                  k+=1
